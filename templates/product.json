@@ -259,7 +259,7 @@
                     "text_McjMWz": {
                       "type": "text",
                       "settings": {
-                        "text": "<p>This product is crafted with quality materials to ensure durability and performance. Designed with your convenience in mind, it seamlessly fits into your everyday life.</p>",
+                        "text": "<p><a href=\"http://localhost:5174/panel-details/{{ closest.product.id }}\" target=\"_blank\" rel=\"noopener noreferrer\">View panel details</a></p>",
                         "width": "100%",
                         "max_width": "normal",
                         "alignment": "left",
