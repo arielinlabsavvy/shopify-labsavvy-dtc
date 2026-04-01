@@ -256,24 +256,11 @@
                     "width": 20
                   },
                   "blocks": {
-                    "text_McjMWz": {
-                      "type": "text",
+                    "panel_details_link_McjMWz": {
+                      "type": "panel-details-link",
                       "settings": {
-                        "text": "<p><a href=\"http://localhost:5174/panel-details/{{ closest.product.id }}\" target=\"_blank\" rel=\"noopener noreferrer\">View panel details</a></p>",
-                        "width": "100%",
-                        "max_width": "normal",
-                        "alignment": "left",
-                        "type_preset": "rte",
-                        "font": "var(--font-primary--family)",
-                        "font_size": "",
-                        "line_height": "normal",
-                        "letter_spacing": "normal",
-                        "case": "none",
-                        "wrap": "pretty",
-                        "color": "",
-                        "background": false,
-                        "background_color": "#00000026",
-                        "corner_radius": 0,
+                        "link_label": "View panel details",
+                        "base_url": "http://localhost:5174/panel-details",
                         "padding-block-start": 0,
                         "padding-block-end": 0,
                         "padding-inline-start": 0,
@@ -283,7 +270,7 @@
                     }
                   },
                   "block_order": [
-                    "text_McjMWz"
+                    "panel_details_link_McjMWz"
                   ]
                 },
                 "accordion_row_aaFerA": {

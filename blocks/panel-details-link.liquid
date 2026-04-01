@@ -1,0 +1,96 @@
+{%- liquid
+  assign product_resource = closest.product | default: product
+  assign base_url = block.settings.base_url | strip
+  if base_url == blank
+    assign base_url = 'http://localhost:5174/panel-details'
+  endif
+-%}
+
+{% if product_resource %}
+  <rte-formatter
+    class="spacing-style text-block rte text-block--align-left"
+    style="
+      {% render 'spacing-padding', settings: block.settings %}
+      --width: 100%;
+      --max-width: var(--max-width--body-normal);
+      --text-align: left;
+    "
+    {{ block.shopify_attributes }}
+  >
+    <p>
+      <a
+        href="{{ base_url }}/{{ product_resource.id }}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{- block.settings.link_label -}}
+      </a>
+    </p>
+  </rte-formatter>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Panel details link",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "Link label",
+      "default": "View panel details"
+    },
+    {
+      "type": "text",
+      "id": "base_url",
+      "label": "Panel URL (no trailing slash)",
+      "default": "http://localhost:5174/panel-details",
+      "info": "Product ID is appended automatically (e.g. …/panel-details/123456789)."
+    },
+    {
+      "type": "header",
+      "content": "Padding"
+    },
+    {
+      "type": "range",
+      "id": "padding-block-start",
+      "label": "Top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-block-end",
+      "label": "Bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-start",
+      "label": "Left",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding-inline-end",
+      "label": "Right",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ]
+}
+{% endschema %}
