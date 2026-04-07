@@ -63,25 +63,55 @@
       var base = proxyUrl || (typeof window !== 'undefined' ? window.location.origin + proxyPath : proxyPath)
       var url = base + (base.indexOf('?') >= 0 ? '&' : '?') + qs
 
+      function bodyPreview(t, maxLen) {
+        var s = String(t || '').replace(/\s+/g, ' ').trim()
+        if (s.length > maxLen) s = s.slice(0, maxLen) + '…'
+        return s
+      }
+
       function parseLabsavvyResponse(r, text) {
+        var trimmed = String(text || '').replace(/^\uFEFF/, '').trim()
+        var ct = (r.headers && r.headers.get && r.headers.get('content-type')) || ''
+
         if (!r.ok) {
           var errMsg = 'HTTP ' + r.status
           try {
-            var errBody = JSON.parse(text)
+            var errBody = JSON.parse(trimmed)
             if (errBody.reason) errMsg += ' (' + errBody.reason + ')'
             else if (errBody.error) errMsg += ': ' + errBody.error
-          } catch (e) {}
-          if (r.status === 403 && text.indexOf('<!DOCTYPE') !== -1) {
-            errMsg +=
-              ' — got HTML, not JSON. App proxy may be misconfigured or the request did not reach LabSavvy.'
+          } catch (e) {
+            if (trimmed.indexOf('<!DOCTYPE') !== -1 || trimmed.indexOf('<html') !== -1) {
+              errMsg += ' — response is HTML, not JSON (often means the request never reached LabSavvy).'
+            } else if (trimmed) {
+              errMsg += ' — ' + bodyPreview(trimmed, 100)
+            }
           }
           throw new Error(errMsg)
         }
-        try {
-          return JSON.parse(text)
-        } catch (e) {
+
+        if (!trimmed) {
           throw new Error(
-            'Expected JSON from LabSavvy but got something else. Is the app proxy URL correct and the API running?',
+            'HTTP ' +
+              r.status +
+              ' with empty body. The app proxy may not be forwarding to LabSavvy, or the API returned nothing.',
+          )
+        }
+
+        try {
+          return JSON.parse(trimmed)
+        } catch (e) {
+          var looksHtml =
+            trimmed.indexOf('<!DOCTYPE') !== -1 ||
+            trimmed.indexOf('<html') !== -1 ||
+            trimmed.indexOf('<HTML') !== -1
+          throw new Error(
+            'HTTP ' +
+              r.status +
+              ' but body is not JSON' +
+              (ct ? ' (Content-Type: ' + bodyPreview(ct, 60) + ')' : '') +
+              (looksHtml
+                ? '. Shopify returned HTML — usually the storefront path is not the app proxy (check theme App proxy path vs Settings → Apps → your app → App proxy), or the proxy URL still points at the wrong host.'
+                : '. Preview: ' + bodyPreview(trimmed, 120)),
           )
         }
       }
@@ -120,9 +150,28 @@
         })
         .catch(function (err) {
           if (statusEl) {
-            var hint =
-              ' 403 bad_signature → set api SHOPIFY_API_SECRET to the app Client secret. 403 shop_mismatch → SHOPIFY_SHOP_DOMAIN must be your …myshopify.com host. Console _shopify_y cookie message is usually unrelated.'
-            statusEl.textContent = (err && err.message ? err.message : 'Request failed') + hint
+            var msg = err && err.message ? err.message : 'Request failed'
+            var hints = []
+            if (msg.indexOf('HTTP 403') !== -1 && msg.indexOf('bad_signature') !== -1) {
+              hints.push(
+                'bad_signature: set api SHOPIFY_API_SECRET to the same value as the app Client secret in Dev Dashboard.',
+              )
+            }
+            if (msg.indexOf('HTTP 403') !== -1 && msg.indexOf('shop_mismatch') !== -1) {
+              hints.push(
+                'shop_mismatch: set SHOPIFY_SHOP_DOMAIN to your store’s …myshopify.com hostname.',
+              )
+            }
+            if (msg.indexOf('not JSON') !== -1 || msg.indexOf('HTML') !== -1) {
+              hints.push(
+                'App proxy destination must be your public LabSavvy API base ending in /tools (not the myshopify.com storefront URL).',
+              )
+            }
+            if (msg.indexOf('Failed to fetch') !== -1 || msg.indexOf('NetworkError') !== -1) {
+              hints.push('Network error — check browser devtools Network tab for the request URL and status.')
+            }
+            var extra = hints.length ? ' — ' + hints.join(' ') : ''
+            statusEl.textContent = msg + extra
             statusEl.hidden = false
           }
         })
