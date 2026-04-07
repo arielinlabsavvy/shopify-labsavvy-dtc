@@ -4,6 +4,8 @@
   if proxy_path == blank
     assign proxy_path = '/tools/panels'
   endif
+  # Absolute URL: themes with <base href> break relative fetch('/tools/panels')
+  assign proxy_fetch_url = request.origin | append: proxy_path
 -%}
 
 {% if product_resource %}
@@ -22,6 +24,7 @@
       class="labsavvy-panel-details"
       data-labsavvy-panel-details
       data-proxy-path="{{ proxy_path | escape }}"
+      data-proxy-url="{{ proxy_fetch_url | escape }}"
       data-product-id="{{ product_resource.id }}"
       data-heading="{{ block.settings.link_label | escape }}"
     >
@@ -44,6 +47,7 @@
           .replace(/"/g, '&quot;')
       }
 
+      var proxyUrl = root.getAttribute('data-proxy-url')
       var proxyPath = root.getAttribute('data-proxy-path') || '/tools/panels'
       var productId = root.getAttribute('data-product-id')
       var heading = root.getAttribute('data-heading') || 'Panel details'
@@ -56,12 +60,37 @@
       }
 
       var qs = 'product_id=' + encodeURIComponent(productId)
-      var url = proxyPath + (proxyPath.indexOf('?') >= 0 ? '&' : '?') + qs
+      var base = proxyUrl || (typeof window !== 'undefined' ? window.location.origin + proxyPath : proxyPath)
+      var url = base + (base.indexOf('?') >= 0 ? '&' : '?') + qs
+
+      function parseLabsavvyResponse(r, text) {
+        if (!r.ok) {
+          var errMsg = 'HTTP ' + r.status
+          try {
+            var errBody = JSON.parse(text)
+            if (errBody.reason) errMsg += ' (' + errBody.reason + ')'
+            else if (errBody.error) errMsg += ': ' + errBody.error
+          } catch (e) {}
+          if (r.status === 403 && text.indexOf('<!DOCTYPE') !== -1) {
+            errMsg +=
+              ' — got HTML, not JSON. App proxy may be misconfigured or the request did not reach LabSavvy.'
+          }
+          throw new Error(errMsg)
+        }
+        try {
+          return JSON.parse(text)
+        } catch (e) {
+          throw new Error(
+            'Expected JSON from LabSavvy but got something else. Is the app proxy URL correct and the API running?',
+          )
+        }
+      }
 
       fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
         .then(function (r) {
-          if (!r.ok) throw new Error('HTTP ' + r.status)
-          return r.json()
+          return r.text().then(function (text) {
+            return parseLabsavvyResponse(r, text)
+          })
         })
         .then(function (data) {
           if (statusEl) statusEl.hidden = true
@@ -89,10 +118,11 @@
           contentEl.innerHTML = html
           contentEl.hidden = false
         })
-        .catch(function () {
+        .catch(function (err) {
           if (statusEl) {
-            statusEl.textContent =
-              'Unable to load panel details. Check the app proxy URL in theme settings and that the app is installed.'
+            var hint =
+              ' 403 bad_signature → set api SHOPIFY_API_SECRET to the app Client secret. 403 shop_mismatch → SHOPIFY_SHOP_DOMAIN must be your …myshopify.com host. Console _shopify_y cookie message is usually unrelated.'
+            statusEl.textContent = (err && err.message ? err.message : 'Request failed') + hint
             statusEl.hidden = false
           }
         })
