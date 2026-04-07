@@ -100,6 +100,17 @@
         try {
           return JSON.parse(trimmed)
         } catch (e) {
+          var looksNgrokInterstitial =
+            trimmed.indexOf('ngrok') !== -1 &&
+            (trimmed.indexOf('You are about to visit') !== -1 ||
+              trimmed.indexOf('ngrok-free') !== -1)
+          if (looksNgrokInterstitial) {
+            throw new Error(
+              'HTTP ' +
+                r.status +
+                ' — ngrok Free interstitial (text/plain). Shopify’s servers cannot click “Visit Site”. Use Cloudflare Tunnel, ngrok paid, or another public HTTPS URL without this page; update [app_proxy].url and shopify app deploy.',
+            )
+          }
           var looksHtml =
             trimmed.indexOf('<!DOCTYPE') !== -1 ||
             trimmed.indexOf('<html') !== -1 ||
@@ -110,13 +121,19 @@
               ' but body is not JSON' +
               (ct ? ' (Content-Type: ' + bodyPreview(ct, 60) + ')' : '') +
               (looksHtml
-                ? '. Shopify returned HTML — usually the storefront path is not the app proxy (check theme App proxy path vs Settings → Apps → your app → App proxy), or the proxy URL still points at the wrong host.'
+                ? '. Shopify returned HTML — theme App proxy path may not match the app’s storefront path, or [app_proxy].url (shopify.app.toml) still points at a non-API host.'
                 : '. Preview: ' + bodyPreview(trimmed, 120)),
           )
         }
       }
 
-      fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+      fetch(url, {
+        credentials: 'same-origin',
+        headers: {
+          Accept: 'application/json',
+          'ngrok-skip-browser-warning': '69420',
+        },
+      })
         .then(function (r) {
           return r.text().then(function (text) {
             return parseLabsavvyResponse(r, text)
