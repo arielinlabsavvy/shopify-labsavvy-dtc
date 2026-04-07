@@ -1,14 +1,14 @@
 {%- liquid
   assign product_resource = closest.product | default: product
-  assign base_url = block.settings.base_url | strip
-  if base_url == blank
-    assign base_url = 'http://localhost:5174/panel-details'
+  assign proxy_path = block.settings.proxy_path | strip
+  if proxy_path == blank
+    assign proxy_path = '/tools/panels'
   endif
 -%}
 
 {% if product_resource %}
   <rte-formatter
-    class="spacing-style text-block rte text-block--align-left"
+    class="spacing-style text-block rte text-block--align-left labsavvy-panel-details-root"
     style="
       {% render 'spacing-padding', settings: block.settings %}
       --width: 100%;
@@ -17,35 +17,112 @@
     "
     {{ block.shopify_attributes }}
   >
-    <p>
-      <a
-        href="{{ base_url }}/{{ product_resource.id }}"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {{- block.settings.link_label -}}
-      </a>
-    </p>
+    <div
+      id="labsavvy-panels-{{ block.id }}"
+      class="labsavvy-panel-details"
+      data-labsavvy-panel-details
+      data-proxy-path="{{ proxy_path | escape }}"
+      data-product-id="{{ product_resource.id }}"
+      data-heading="{{ block.settings.link_label | escape }}"
+    >
+      <p class="labsavvy-panel-details__status" data-role="status" aria-live="polite">
+        {{- block.settings.loading_text -}}
+      </p>
+      <div class="labsavvy-panel-details__content" data-role="content" hidden></div>
+    </div>
   </rte-formatter>
+  <script>
+    (function () {
+      var root = document.getElementById('labsavvy-panels-{{ block.id }}')
+      if (!root) return
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+      }
+
+      var proxyPath = root.getAttribute('data-proxy-path') || '/tools/panels'
+      var productId = root.getAttribute('data-product-id')
+      var heading = root.getAttribute('data-heading') || 'Panel details'
+      var statusEl = root.querySelector('[data-role="status"]')
+      var contentEl = root.querySelector('[data-role="content"]')
+
+      if (!productId) {
+        if (statusEl) statusEl.textContent = 'Missing product.'
+        return
+      }
+
+      var qs = 'product_id=' + encodeURIComponent(productId)
+      var url = proxyPath + (proxyPath.indexOf('?') >= 0 ? '&' : '?') + qs
+
+      fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status)
+          return r.json()
+        })
+        .then(function (data) {
+          if (statusEl) statusEl.hidden = true
+          if (!contentEl) return
+          var panels = data.panels || []
+          var productName = data.productName || ''
+          var html = ''
+          html += '<h3 class="labsavvy-panel-details__heading">' + escapeHtml(heading) + '</h3>'
+          if (productName) {
+            html += '<p class="labsavvy-panel-details__product">' + escapeHtml(productName) + '</p>'
+          }
+          if (!panels.length) {
+            html += '<p class="labsavvy-panel-details__empty">No panel information for this product.</p>'
+          } else {
+            html += '<ul class="labsavvy-panel-details__list">'
+            for (var i = 0; i < panels.length; i++) {
+              var p = panels[i] || {}
+              var code = p.code != null ? String(p.code) : ''
+              var name = p.name != null ? String(p.name) : ''
+              var line = name ? name + ' (' + code + ')' : code
+              html += '<li>' + escapeHtml(line) + '</li>'
+            }
+            html += '</ul>'
+          }
+          contentEl.innerHTML = html
+          contentEl.hidden = false
+        })
+        .catch(function () {
+          if (statusEl) {
+            statusEl.textContent =
+              'Unable to load panel details. Check the app proxy URL in theme settings and that the app is installed.'
+            statusEl.hidden = false
+          }
+        })
+    })()
+  </script>
 {% endif %}
 
 {% schema %}
 {
-  "name": "Panel details link",
+  "name": "Panel details (LabSavvy)",
   "tag": null,
   "settings": [
     {
       "type": "text",
       "id": "link_label",
-      "label": "Link label",
-      "default": "View panel details"
+      "label": "Heading",
+      "default": "Panel details"
     },
     {
       "type": "text",
-      "id": "base_url",
-      "label": "Panel URL (no trailing slash)",
-      "default": "http://localhost:5174/panel-details",
-      "info": "Product ID is appended automatically (e.g. …/panel-details/123456789)."
+      "id": "proxy_path",
+      "label": "App proxy path (storefront)",
+      "default": "/tools/panels",
+      "info": "Must match your Shopify app proxy (default: prefix tools, subpath panels → /tools/panels). Uses ?product_id=…; Shopify adds signature when proxying to LabSavvy."
+    },
+    {
+      "type": "text",
+      "id": "loading_text",
+      "label": "Loading text",
+      "default": "Loading panel details…"
     },
     {
       "type": "header",

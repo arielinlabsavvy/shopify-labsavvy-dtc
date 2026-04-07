@@ -259,8 +259,9 @@
                     "panel_details_link_McjMWz": {
                       "type": "panel-details-link",
                       "settings": {
-                        "link_label": "View panel details",
-                        "base_url": "http://localhost:5174/panel-details",
+                        "link_label": "Panel details",
+                        "proxy_path": "/tools/panels",
+                        "loading_text": "Loading panel details…",
                         "padding-block-start": 0,
                         "padding-block-end": 0,
                         "padding-inline-start": 0,
