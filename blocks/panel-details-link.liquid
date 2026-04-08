@@ -100,17 +100,6 @@
         try {
           return JSON.parse(trimmed)
         } catch (e) {
-          var looksNgrokInterstitial =
-            trimmed.indexOf('ngrok') !== -1 &&
-            (trimmed.indexOf('You are about to visit') !== -1 ||
-              trimmed.indexOf('ngrok-free') !== -1)
-          if (looksNgrokInterstitial) {
-            throw new Error(
-              'HTTP ' +
-                r.status +
-                ' — ngrok Free interstitial (text/plain). Shopify’s servers cannot click “Visit Site”. Use Cloudflare Tunnel, ngrok paid, or another public HTTPS URL without this page; update [app_proxy].url and shopify app deploy.',
-            )
-          }
           var looksHtml =
             trimmed.indexOf('<!DOCTYPE') !== -1 ||
             trimmed.indexOf('<html') !== -1 ||
@@ -131,7 +120,6 @@
         credentials: 'same-origin',
         headers: {
           Accept: 'application/json',
-          'ngrok-skip-browser-warning': '69420',
         },
       })
         .then(function (r) {
