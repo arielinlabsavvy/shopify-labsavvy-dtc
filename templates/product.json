@@ -259,7 +259,6 @@
                     "panel_details_link_McjMWz": {
                       "type": "panel-details-link",
                       "settings": {
-                        "link_label": "Panel details",
                         "proxy_path": "/tools/panels",
                         "loading_text": "Loading panel details…",
                         "padding-block-start": 0,

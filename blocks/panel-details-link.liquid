@@ -26,7 +26,6 @@
       data-proxy-path="{{ proxy_path | escape }}"
       data-proxy-url="{{ proxy_fetch_url | escape }}"
       data-product-id="{{ product_resource.id }}"
-      data-heading="{{ block.settings.link_label | escape }}"
     >
       <p class="labsavvy-panel-details__status" data-role="status" aria-live="polite">
         {{- block.settings.loading_text -}}
@@ -50,7 +49,6 @@
       var proxyUrl = root.getAttribute('data-proxy-url')
       var proxyPath = root.getAttribute('data-proxy-path') || '/tools/panels'
       var productId = root.getAttribute('data-product-id')
-      var heading = root.getAttribute('data-heading') || 'Panel details'
       var statusEl = root.querySelector('[data-role="status"]')
       var contentEl = root.querySelector('[data-role="content"]')
 
@@ -131,12 +129,7 @@
           if (statusEl) statusEl.hidden = true
           if (!contentEl) return
           var panels = data.panels || []
-          var productName = data.productName || ''
           var html = ''
-          html += '<h3 class="labsavvy-panel-details__heading">' + escapeHtml(heading) + '</h3>'
-          if (productName) {
-            html += '<p class="labsavvy-panel-details__product">' + escapeHtml(productName) + '</p>'
-          }
           if (!panels.length) {
             html += '<p class="labsavvy-panel-details__empty">No panel information for this product.</p>'
           } else {
@@ -169,7 +162,7 @@
             }
             if (msg.indexOf('not JSON') !== -1 || msg.indexOf('HTML') !== -1) {
               hints.push(
-                'App proxy destination must be your public LabSavvy API base ending in /tools (not the myshopify.com storefront URL).',
+                'App proxy destination must be your public LabSavvy API URL ending in /tools/panels (not the myshopify.com storefront URL).',
               )
             }
             if (msg.indexOf('Failed to fetch') !== -1 || msg.indexOf('NetworkError') !== -1) {
@@ -189,12 +182,6 @@
   "name": "Panel details (LabSavvy)",
   "tag": null,
   "settings": [
-    {
-      "type": "text",
-      "id": "link_label",
-      "label": "Heading",
-      "default": "Panel details"
-    },
     {
       "type": "text",
       "id": "proxy_path",
