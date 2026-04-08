@@ -176,7 +176,12 @@
     })()
   </script>
 {% endif %}
-
+{% stylesheet %}
+ul.labsavvy-panel-details__list {}
+ul.labsavvy-panel-details__list li {
+  padding: 3px 0;
+}
+{% endstylesheet %}
 {% schema %}
 {
   "name": "Panel details (LabSavvy)",
