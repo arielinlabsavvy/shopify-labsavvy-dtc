@@ -61,7 +61,7 @@
               "type": "_product-list-text",
               "name": "t:names.collection_title",
               "settings": {
-                "text": "<h3><strong>Performance 1</strong></h3>",
+                "text": "<h3><strong>Performance</strong></h3>",
                 "width": "fit-content",
                 "max_width": "normal",
                 "alignment": "left",
